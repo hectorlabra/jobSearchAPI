@@ -1,0 +1,75 @@
+import requests
+import pandas as pd
+
+# Reemplaza esto con tu clave API de SerpApi
+API_KEY = "TU_CLAVE_API_AQUI"
+
+# Lista global para almacenar todos los empleos
+all_jobs = []
+
+def search_jobs(query, location):
+    """Función para buscar empleos y agregar los resultados a la lista global."""
+    url = f"https://serpapi.com/search.json?engine=google_jobs&q={query}&location={location}&api_key={API_KEY}"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        jobs = data.get("jobs_results", [])
+        
+        if jobs:
+            for job in jobs:
+                title = job.get("title")
+                company = job.get("company_name")
+                location = job.get("location")
+                via = job.get("via")
+                description = job.get("description")
+                job_url = job.get("related_links", [{}])[0].get("link", "No disponible")
+                
+                all_jobs.append({
+                    "Título": title,
+                    "Empresa": company,
+                    "Ubicación": location,
+                    "Publicado en": via,
+                    "Descripción": description,
+                    "Enlace": job_url
+                })
+            print(f"Se encontraron {len(jobs)} empleos para '{query}' en '{location}'.")
+            print(f"Total acumulado: {len(all_jobs)} empleos.")
+        else:
+            print(f"No se encontraron empleos para '{query}' en '{location}'.")
+    else:
+        print(f"Error en la solicitud: {response.status_code}")
+
+def save_to_csv():
+    """Función para guardar todos los empleos acumulados en un CSV."""
+    if all_jobs:
+        df = pd.DataFrame(all_jobs)
+        df.to_csv("empleos_resultados.csv", index=False, encoding="utf-8-sig")
+        print("Los resultados se han guardado en 'empleos_resultados.csv'.")
+    else:
+        print("No hay empleos para guardar.")
+
+# Bucle principal
+while True:
+    # Pedir parámetros al usuario
+    query = input("Ingresa el tipo de empleo (o 'salir' para terminar): ")
+    if query.lower() == "salir":
+        break
+    
+    location = input("Ingresa la ubicación (ejemplo: 'San Francisco, CA'): ")
+    
+    # Realizar la búsqueda
+    search_jobs(query, location)
+    
+    # Preguntar qué hacer después
+    action = input("¿Qué quieres hacer? (buscar otro / guardar csv / salir): ").lower()
+    if action == "guardar csv":
+        save_to_csv()
+        break
+    elif action == "salir":
+        break
+    # Si dice "buscar otro" o cualquier otra cosa, el bucle continúa
+
+# Si sale sin guardar, preguntar si quiere el CSV
+if all_jobs and input("¿Quieres guardar los resultados en un CSV? (sí/no): ").lower() == "sí":
+    save_to_csv()
