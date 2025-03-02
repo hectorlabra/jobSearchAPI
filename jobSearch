@@ -1,8 +1,15 @@
 import requests
 import pandas as pd
+from dotenv import load_dotenv
+import os
 
-# Reemplaza esto con tu clave API de SerpApi
-API_KEY = "TU_CLAVE_API_AQUI"
+# Carga las variables del archivo .env
+load_dotenv()
+
+# Obtiene la clave API desde la variable de entorno
+API_KEY = os.getenv("SERPAPI_KEY")
+if not API_KEY:
+    raise ValueError("No se encontró la clave API. Configura la variable 'SERPAPI_KEY' en un archivo .env o como variable de entorno.")
 
 # Lista global para almacenar todos los empleos
 all_jobs = []
