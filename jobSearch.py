@@ -1,6 +1,6 @@
-import requests
-import pandas as pd
-from dotenv import load_dotenv
+import requests # type: ignore
+import pandas as pd # type: ignore
+from dotenv import load_dotenv # type: ignore
 import os
 
 # Carga las variables del archivo .env
@@ -17,20 +17,25 @@ all_jobs = []
 def search_jobs(query, location):
     """Función para buscar empleos y agregar los resultados a la lista global."""
     url = f"https://serpapi.com/search.json?engine=google_jobs&q={query}&location={location}&api_key={API_KEY}"
-    response = requests.get(url)
     
-    if response.status_code == 200:
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Esto lanzará una excepción para códigos de estado HTTP erróneos
+        
         data = response.json()
         jobs = data.get("jobs_results", [])
         
         if jobs:
             for job in jobs:
-                title = job.get("title")
-                company = job.get("company_name")
-                location = job.get("location")
-                via = job.get("via")
-                description = job.get("description")
-                job_url = job.get("related_links", [{}])[0].get("link", "No disponible")
+                title = job.get("title", "No disponible")
+                company = job.get("company_name", "No disponible")
+                location = job.get("location", "No disponible")
+                via = job.get("via", "No disponible")
+                description = job.get("description", "No disponible")
+                
+                # Acceso seguro a enlaces relacionados
+                related_links = job.get("related_links", [])
+                job_url = related_links[0].get("link", "No disponible") if related_links else "No disponible"
                 
                 all_jobs.append({
                     "Título": title,
@@ -44,15 +49,22 @@ def search_jobs(query, location):
             print(f"Total acumulado: {len(all_jobs)} empleos.")
         else:
             print(f"No se encontraron empleos para '{query}' en '{location}'.")
-    else:
-        print(f"Error en la solicitud: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error en la solicitud HTTP: {e}")
+    except ValueError as e:
+        print(f"Error al procesar datos JSON: {e}")
+    except Exception as e:
+        print(f"Error inesperado: {e}")
 
 def save_to_csv():
     """Función para guardar todos los empleos acumulados en un CSV."""
     if all_jobs:
-        df = pd.DataFrame(all_jobs)
-        df.to_csv("empleos_resultados.csv", index=False, encoding="utf-8-sig")
-        print("Los resultados se han guardado en 'empleos_resultados.csv'.")
+        try:
+            df = pd.DataFrame(all_jobs)
+            df.to_csv("empleos_resultados.csv", index=False, encoding="utf-8")
+            print("Los resultados se han guardado en 'empleos_resultados.csv'.")
+        except Exception as e:
+            print(f"Error al guardar CSV: {e}")
     else:
         print("No hay empleos para guardar.")
 
